@@ -29,4 +29,8 @@ go.work.sum
 
 # Editor/IDE
 # .idea/
-# .vscode/
+.vscode/
+
+lotofacil-checker
+lotofacil-checker.exe
+config*.json
