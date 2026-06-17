@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -38,25 +37,34 @@ func PromptInt(label string) (int, error) {
 	}
 }
 
-func ReadNumbers(label string, expected int) ([]int, error) {
-	hint := fmt.Sprintf(" (%d numbers)", expected)
-	if expected == 0 {
-		hint = ""
+func ReadNumbers(label string, expected int, strict bool) ([]int, error) {
+	hint := ""
+	if expected > 0 {
+		if !strict {
+			hint = fmt.Sprintf(" (min %d numbers)", expected)
+		} else {
+			hint = fmt.Sprintf(" (%d numbers)", expected)
+		}
 	}
-
 	for {
 		text, err := Prompt(label + hint + ": ")
 		if err != nil {
 			return nil, err
 		}
-
+		if text == "" {
+			return nil, fmt.Errorf("no numbers provided")
+		}
 		nums, err := parseNumbers(text)
 		if err != nil {
 			fmt.Printf("Invalid input: %v\n", err)
 			continue
 		}
-		if expected > 0 && len(nums) != expected {
-			fmt.Printf("Enter exactly %d numbers.\n", expected)
+		if expected > 0 && strict && len(nums) != expected {
+			fmt.Printf("Enter exactly %d numbers. Got %d.\n", expected, len(nums))
+			continue
+		}
+		if expected > 0 && !strict && len(nums) < expected {
+			fmt.Printf("Enter at least %d numbers. Got %d.\n", expected, len(nums))
 			continue
 		}
 		return validate.Normalize(nums), nil
@@ -89,16 +97,28 @@ func FormatNumbers(nums []int) string {
 	return strings.Join(parts, " ")
 }
 
-func FormatResultWithBetNumbers(resultNums []int, betNums []int) string {
-	parts := make([]string, len(betNums))
-	for i, n := range betNums {
-		if slices.Contains(resultNums, n) {
-			parts[i] = fmt.Sprintf("%02d", n)
-		} else {
-			parts[i] = "[]"
+func FormatResultWithBetNumbers(resultNums []int, betNums []int) (result string, bet string) {
+	var strbResult strings.Builder
+	var strbBet strings.Builder
+	b := 0
+	r := 0
+	for b < len(betNums) || r < len(resultNums) {
+		if b < len(betNums) && r < len(resultNums) && betNums[b] == resultNums[r] {
+			fmt.Fprintf(&strbResult, "%02d ", resultNums[r])
+			fmt.Fprintf(&strbBet, "%02d ", betNums[b])
+			b++
+			r++
+		} else if r == len(resultNums) || betNums[b] < resultNums[r] {
+			fmt.Fprintf(&strbResult, "-- ")
+			fmt.Fprintf(&strbBet, "%02d ", betNums[b])
+			b++
+		} else if b == len(betNums) || resultNums[r] < betNums[b] {
+			fmt.Fprintf(&strbResult, "%02d ", resultNums[r])
+			fmt.Fprintf(&strbBet, "[] ")
+			r++
 		}
 	}
-	return strings.Join(parts, " ")
+	return strbResult.String(), strbBet.String()
 }
 
 // ParseDateUnix parses DD/MM/YYYY from CSV into Unix seconds at UTC midnight.

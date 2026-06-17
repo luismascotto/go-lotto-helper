@@ -58,11 +58,15 @@ func (a *App) Run() error {
 				fmt.Printf("Error: %v\n", err)
 			}
 		case "5":
-			if err := a.checkPastResults(); err != nil {
+			if err := a.checkPastResults(false); err != nil {
 				fmt.Printf("Error: %v\n", err)
 			}
 		case "6":
 			if err := a.addPastResult(); err != nil {
+				fmt.Printf("Error: %v\n", err)
+			}
+		case "7":
+			if err := a.checkPastResults(true); err != nil {
 				fmt.Printf("Error: %v\n", err)
 			}
 
@@ -89,9 +93,11 @@ Results path: %s
 1) List bets
 2) Add bet
 3) Remove bet
-4) Check bets (enter raffle numbers)
-5) Check past results (enter minimum number of hits)
-6) Add past result (enter raffle numbers)
+4) Check your bets (enter raffle numbers)
+5) Check your bets against past results (enter minimum number of hits)
+6) Add a past result (enter raffle numbers)
+7) Check a bet against past results (enter bet numbers andminimum number of hits)
+
 0) Exit
 
 Choose an option: `, a.store.Path(), len(a.cfg.Bets), a.resultsPath)
@@ -124,7 +130,7 @@ func (a *App) addBet() error {
 	fmt.Printf("Enter %d-%d numbers (01-25), separated by spaces or commas:\n",
 		model.MinBetSize, model.MaxBetSize)
 
-	numbers, err := input.ReadNumbers("Numbers", 0)
+	numbers, err := input.ReadNumbers("Numbers", model.MinBetSize, false)
 	if err != nil {
 		return err
 	}
@@ -187,7 +193,7 @@ func (a *App) checkResults() error {
 	}
 
 	fmt.Printf("\nEnter the %d raffled numbers (01-25):\n", model.RaffleSize)
-	raffle, err := input.ReadNumbers("Raffle", model.RaffleSize)
+	raffle, err := input.ReadNumbers("Raffle", model.RaffleSize, true)
 	if err != nil {
 		return err
 	}
@@ -217,10 +223,27 @@ func (a *App) checkResults() error {
 	return nil
 }
 
-func (a *App) checkPastResults() error {
-	if len(a.cfg.Bets) == 0 {
+func (a *App) checkPastResults(enterBetNumbers bool) error {
+	if !enterBetNumbers && len(a.cfg.Bets) == 0 {
 		fmt.Println("\nRegister at least one bet before checking past results.")
 		return nil
+	}
+	var bets []model.Bet
+	if !enterBetNumbers {
+		bets = a.cfg.Bets
+	}
+	if enterBetNumbers {
+		fmt.Printf("Enter %d-%d numbers (01-25), separated by spaces or commas:\n",
+			model.MinBetSize, model.MaxBetSize)
+
+		betNumbers, err := input.ReadNumbers("Bet numbers", model.RaffleSize, false)
+		if err != nil {
+			return err
+		}
+		bets = append(bets, model.Bet{
+			Name:    "Custom bet",
+			Numbers: betNumbers,
+		})
 	}
 
 	minHits, err := input.PromptInt("Enter the minimum number of hits to check past results: ")
@@ -228,7 +251,7 @@ func (a *App) checkPastResults() error {
 		return err
 	}
 
-	results, err := result.CheckPastResultsV4(a.cfg.Bets, minHits, a.resultsPath)
+	results, err := result.CheckPastResultsV4(bets, minHits, a.resultsPath)
 	if err != nil {
 		return err
 	}
@@ -253,8 +276,9 @@ func (a *App) checkPastResults() error {
 	for _, r := range results {
 		fmt.Printf("[%s] %d hit(s) - %s\n",
 			input.FormatDateUnix(r.PastResult.Date), r.Hits, r.Bet.Name)
-		fmt.Printf("  Numbers: %s\n", input.FormatResultWithBetNumbers(*r.PastResult.Numbers, r.Bet.Numbers))
-		fmt.Printf("      Bet: %s\n", input.FormatNumbers(r.Bet.Numbers))
+		lineResult, lineBet := input.FormatResultWithBetNumbers(*r.PastResult.Numbers, r.Bet.Numbers)
+		fmt.Printf("  Numbers: %s\n", lineResult)
+		fmt.Printf("      Bet: %s\n", lineBet)
 		fmt.Println()
 	}
 
@@ -282,7 +306,7 @@ func (a *App) addPastResult() error {
 	lastResult.Date = dateUnix
 	//Ask for the numbers
 	fmt.Printf("\nEnter the %d raffled numbers (01-25)  separated by spaces or commas:\n", model.RaffleSize)
-	numbers, err := input.ReadNumbers("Numbers", model.RaffleSize)
+	numbers, err := input.ReadNumbers("Numbers", model.RaffleSize, true)
 	if err != nil {
 		return err
 	}
