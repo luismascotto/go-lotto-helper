@@ -40,9 +40,7 @@ func CheckPastResultsV4WithConfig(bets []model.Bet, minHits int, cfg *PipelineCo
 	)
 
 	for range cfg.WorkerCount {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for {
 				select {
 				case <-ctx.Done():
@@ -69,7 +67,7 @@ func CheckPastResultsV4WithConfig(bets []model.Bet, minHits int, cfg *PipelineCo
 					pools.releaseHitsBatch(hits)
 				}
 			}
-		}()
+		})
 	}
 
 	wg.Wait()
