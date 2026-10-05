@@ -31,6 +31,6 @@ go.work.sum
 # .idea/
 .vscode/
 
-lotofacil-checker
-lotofacil-checker.exe
+/lotofacil-checker
+/lotofacil-checker.exe
 config*.json

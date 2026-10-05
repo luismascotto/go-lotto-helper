@@ -96,7 +96,7 @@ Results path: %s
 4) Check your bets (enter raffle numbers)
 5) Check your bets against past results (enter minimum number of hits)
 6) Add a past result (enter raffle numbers)
-7) Check a bet against past results (enter bet numbers andminimum number of hits)
+7) Check a bet against past results (enter bet numbers and minimum number of hits)
 
 0) Exit
 
