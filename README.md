@@ -2,6 +2,10 @@
 
 CLI to manage recurring Lotofácil bets and check how many numbers matched after a draw.
 
+## Prerequisites
+
+- Go 1.22 or later
+
 ## Rules
 
 - Each bet has **15 to 20** numbers in the range **01–25**
@@ -29,8 +33,11 @@ copy config.example.json config-20260527.json
 1. **List bets** — show all registered bets
 2. **Add bet** — name (optional) + 15–20 numbers
 3. **Remove bet** — delete by index
-4. **Check results** — enter 15 draw numbers and see hits per bet
-5. **Exit**
+4. **Check your bets** — enter 15 draw numbers and see hits per bet
+5. **Check your bets against past results** — enter minimum number of hits to filter historical matches
+6. **Add a past result** — append a new draw to `results.csv`
+7. **Check a bet against past results** — enter custom bet numbers and minimum hits to check historical matches
+0. **Exit**
 
 ## Config file
 
@@ -70,3 +77,17 @@ Single-digit numbers (`1`) and zero-padded (`01`) are both accepted.
 ## Architecture
 
 Checking bets against historical draws (`results.csv`) uses a parallel pipeline with bounded workers and `sync.Pool` batch reuse. See [docs/result-pipeline.md](docs/result-pipeline.md) for flow diagrams, pool lifecycle, and tuning (`BatchSize`, `WorkerCount`).
+
+## Testing and Benchmarks
+
+Run tests:
+```bash
+go test ./...
+```
+
+Run benchmarks (requires `results.csv` in the project root):
+```bash
+go test -bench=. -benchmem ./internal/result/
+```
+
+Benchmarks compare different batch sizes (32, 60, 100, 200) for the V4 parallel pipeline, measuring throughput and memory allocations when checking bets against historical results.

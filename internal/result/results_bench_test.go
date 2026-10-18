@@ -56,7 +56,7 @@ func benchmarkCheckPastResultsV4WithConfig_Parameters(b *testing.B, batchSize in
 	minHits := 11
 	b.ReportAllocs()
 	cfg := PipelineConfig{BatchSize: batchSize, WorkerCount: workerCount}
-	for b.Loop() {
+	for range b.N {
 		_, _ = CheckPastResultsV4WithConfig(bets, minHits, &cfg)
 	}
 }
